@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lexico-Dico: Gen Z Wörterbuch</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px 0;
+        }
+
+        .container {
+            background-color: white;
+            width: 95%;
+            max-width: 850px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #3f51b5;
+            font-size: 26px;
+            margin-bottom: 15px;
+        }
+
+        .description {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            font-size: 16px;
+            outline: none;
+        }
+
+        button {
+            background-color: #3f51b5;
+            color: white;
+            border: none;
+            padding: 0 25px;
+            border-radius: 12px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background-color: #303f9f;
+        }
+
+        .stats {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 25px;
+        }
+
+        .popular-title {
+            color: #3f51b5;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .suggestions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+        }
+
+        .suggestion-item {
+            font-size: 13px;
+            color: #444;
+            cursor: pointer;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            transition: all 0.2s;
+            border: 1px solid #eee;
+        }
+
+        .suggestion-item:hover {
+            background: #eef0f7;
+            color: #3f51b5;
+            border-color: #3f51b5;
+        }
+
+        #result {
+            margin-top: 25px;
+            padding: 20px;
+            border-radius: 12px;
+            background-color: #f9f9f9;
+            text-align: left;
+            border-left: 5px solid #3f51b5;
+            display: none;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h1>Lexico-Dico: Online Wörterbuch der Gen Z 🌐</h1>
+        </div>
+
+        <p class="description">
+            Entdecke die Bedeutung von Ausdrücken und Vokabeln der heutigen Generation. 
+            Gib ein Wort ein, um dessen Definition, Beispiele und die französische Übersetzung zu erhalten.
+        </p>
+
+        <div class="search-box">
+            <input id="mot" list="suggestions" type="text" placeholder="Ex. cringe, YOLO, lost..." onkeypress="handleKeyPress(event)">
+            <datalist id="suggestions"></datalist>
+            <button onclick="chercher()">🔍 Suchen</button>
+        </div>
+
+        <div class="stats" id="countDisplay">
+            📊 Wörterbuch wird geladen...
+        </div>
+
+        <div class="popular-section">
+            <div class="popular-title">📍 Populäre Vorschläge</div>
+            <div class="suggestions-grid" id="popularGrid">
+                </div>
+        </div>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        // BASE DE DONNÉES COMPLÈTE RÉINTÉGRÉE
+        const dictionnaire = {
+            "Akh": "Bruder (arabischer Ursprung), wird wie «Bro» verwendet.<br><br>z.B. : Ey Akh, was geht? — FR: Hé frérot, quoi de neuf? ",
+            "Alman": "Klischeehafter Deutscher, spießig.<br><br>z.B. : Boah, du bist so ein Alman, du lachst bei keinem einzigen Witz.",
+            "Alter/ Alta/ Alda": "Kumpel, Kollege.<br><br>z.B. : Was geht denn, Alta? — FR: Quoi de neuf, Bro? ",
+            "auf Lock": "locker, entspannt.<br><br>z.B. : Er geht auf Lock in die Prüfung.— FR: Il passe l’examen relax.",
+            "Babo": "Chef, Anführer.<br><br>z.B. : Er ist der Babo der Clique.— FR: C’est lui le boss du groupe",
+            "Bae": "Baby, Schatz (aus dem Englischen).<br><br>z.B. : Ich liebe dich, Bae.— FR: Je t’aime, chéri(e).",
+            "Beef": "Streit, Konflikt.<br><br>z.B. : Die haben Beef wegen eines Mädchens.— FR: Ils se disputent à cause d’une fille.",
+            "bodenlos": "Unverschämt, extrem schlecht. <br><br>z.B : Seine Noten sind bodenlos. — FR: Ses notes sont catastrophiques",
+            "Bratan": "Kumpel, Freund.<br><br>z.B : Was geht, Bratan? — FR: Quoi de neuf, reuf ?",
+            "Bubatz": "Cannabis.<br><br>z.B : Hast du Bubatz dabei? — FR: T’as de la beuh ?",
+            "Chaya": "attraktives Mädchen, hübsche Frau. <br><br>z.B : Die Chaya da drüben ist hübsch. — FR: La meuf là-bas est canon.",
+            "checken": "verstehen, kapieren <br><br>z.B : Hast du’s gecheckt? — FR: T’as capté ?",
+            "chillen": "sich entspannen.<br><br>z.B : Wir chillen im Park. — FR: On se la coule dousse au parc.",
+            "cringe": "peinlich, unangenehm.<br><br>z.B : Das war cringe, was er gesagt hat. — FR: Ce qu’il a dit était gênant.",
+            "Crush": "jemand, in den man verliebt ist.<br><br>z.B : Mein Crush ist in meiner Klasse. — FR: Mon crush est dans ma classe.",
+            "so dürfen": "'Ist das erlaubt?' (ironisch gemeint bei frechem Verhalten).<br><br>z.B : Er hat das einfach geklaut – darf er so?! — FR: Il l’a piqué - Ça se fait ? ",
+            "delulu": "realitätsfern, verrückt (von 'delusional').<br><br>z.B Ex : Sie denkt, er liebt sie – voll delulu! — FR: Elle croit qu’il l’aime – Elle se fout le doigt dans l’oeil.",
+            "Digga": "Freund, Bro.<br><br>z.B : Alles klar, Digga? — FR: Ça va, mec ?",
+            "dissen": "jemanden runtermachen.<br><br>z.B : Er hat ihn vor allen gedisst. — FR: Il l’a clashé devant tout le monde.",
+            "Drip": "Guter Kleidungsstil.<br><br>z.B : Dein Outfit hat krassen Drip. — FR: Ton style est super stylé.",
+            "Ehrenmann / Ehrenfrau": "sehr respektvolle, loyale Person.<br><br>z.B : Du hast mir geholfen – du bist ein Ehrenmann! — FR: Tu m’as aide, t’es un mec bien!",
+            "flexen": "mit etwas angeben.<br><br>z.B : Er flext mit seinem neuen Handy. — FR: Il frime avec son nouveau téléphone.",
+            "fly sein": "cool oder stylisch sein.<br><br>z.B : Sie ist richtig fly heute. — FR: Elle est stylée aujourd’hui.",
+            "Geringverdiener": "Ironisch: Verlierer.<br><br>z.B : Du bist so ein Geringverdiener. — FR: Quel looser, toi !",
+            "ghosten": "Kontakt abbrechen ohne Erklärung.<br><br>z.B : Sie hat mich einfach Jahre lang geghostet. — FR: Elle m’a ghosté pendants des années.",
+            "goofy": "Tollpatschig, albern.<br><br>z.B : Du bist heute richtig goofy. — FR: T’es vraiment bête aujourd’hui.",
+            "sich gönnen!": "Mach dir eine Freude, greif zu.<br><br>z.B : Gönn dir ein Stück Kuchen. — FR: Fais-toi plaisir.",
+            "Habibi": "Liebling, Schatz (arabisch).<br><br>z.B : Komm her, Habibi. — FR: Viens ici, chéri.",
+            "hops nehmen": "jemanden fertig machen.<br><br>z.B : Der Lehrer hat ihn hops genommen. — FR: Le prof l’a démonté.",
+            "Hustlen": "Sehr hart arbeiten.<br><br>z.B : Ich hustl’ jeden Tag im Gym. — FR: Je bosse dur à la salle.",
+            "I bims": "Ich bin’s (absichtlich falsch geschrieben).<br><br>z.B : I bims, der neue Azubi. — FR: C’est moi, le nouvel apprenti.",
+            "lost": "Planlos, orientierungslos.<br><br>z.B : Er ist komplett lost in Mathe. — FR: Il est complètement paumé en maths.",
+            "lowkey": "Zurückhaltend, heimlich.<br><br>z.B : Ich mag ihn lowkey. — FR: J’ai un petit faible pour lui.",
+            "Mashallah": "Ausdruck von Bewunderung.<br><br>z.B : Deine Noten – mashallah! — FR: Tes notes, wow !",
+            "Macher": "Eine Person, die anpackt.<br><br>z.B : Sie ist eine echte Macherin. — FR: C’est eine vraie fonceuse.",
+            "no front": "Nicht beleidigend gemeint.<br><br>z.B : Du bist schlecht – no front. — FR: T’es nul, sans vouloir offenser.",
+            "Rizz": "Charme beim Flirten.<br><br>z.B : Er hat null Rizz. — FR: Il a zéro charme.",
+            "Simp": "Übertrieben verehrende Person.<br><br>z.B : Er kauft ihr alles – totaler Simp. — FR: Il fait tout pour elle.",
+            "slay": "etwas super machen.<br><br>z.B : Sie hat die Präsentation geslayed. — FR: Elle a géré sa présentation.",
+            "sus": "verdächtig, komisch.<br><br>z.B : Warum bist du so still? Voll sus. — FR: T’es chelou, là.",
+            "toxic": "ungesund, schädlich (v. a. Beziehungen).<br><br>z.B : Ihre Beziehung ist toxic. — FR: Leur relation est toxique.",
+            "Vallah / Wallah": "Ich schwöre (aus dem Arabischen).<br><br>z.B : Wallah, ich war’s nicht. — FR: J’te jure, c’était pas moi.",
+            "wild": "extrem, verrückt, krass.<br><br>z.B : Die Party war wild. — FR: La soirée était ouf.",
+            "Yalla": "Los, beeil dich! (aus dem Arabischen).<br><br>z.B : Yalla, wir sind spät! — FR: Allez, on est à la bourre !",
+            "YOLO": "You Only Live Once.<br><br>z.B : Ich spring, weil YOLO! — FR: Je fonce, on ne vit qu’une fois  !", 
+            "zugeklingt": "volltrunken, berauscht.<br><br>z.B : Dieser Jungs ist total zugeklingt — FR: Ce mec est complètement ivre.",
+            "zutexten" : "auf jemanden einreden.<br><br>z.B : Hör auf, mich zuzutexten, das nervt! — FR: Cesse de me harceler, c’est énervant.",
+            "abgehen" : "Spaß haben, heftig sein.<br><br>z.B :  Die Party ist richtig abgegangen. — FR: La fête était de ouf !",
+            "adden" : "jemanden auf Social Media hinzufügen'<br><br>z.B : Ich hab dich auf Snap geaddet. — FR: Je t’ai ajouté sur Snap.",
+            "bocken" : "Lust machen, Spaß machen.<br><br>z.B : Das bockt voll! — FR: C’est trop fun !",
+            "burnen" : "heftig sein, stark wirken.<br><br>z.B : Der Beat burnt richtig! — FR: Le son est trop lourd !",
+            "dancen" : "tanzen.<br><br>z.B : Wir dancen heute im Club. — FR: On danse ce soir en boîte.",
+            "feiern" : "cool finden, gut finden.<br><br>z.B : Ich feier diesen Song! — FR: J’adore ce son !",
+            "grinden" : "hart arbeiten, sich anstrengen.<br><br>z.B : Ich muss fürs Abi grinden. — FR: Je dois bosser à fond pour le bac.",
+            "goonen" : "mastubieren, sich selbstbefriedigen.<br><br>z.B : Dieser jungs muss jeden Tag goonen. — FR: Ce gars doit se branler every day.",
+            "haten" : "kritisieren, negativ sein.<br><br>z.B : Warum hatest du alles? — FR: Pourquoi tu critiques tout ?",
+            "jucken" : "egal sein, nicht interessieren.<br><br>z.B : Das juckt mich null. — FR: Je m’en fiche complètement.",
+            "leaken" : "veröffentlichen, obwohl man’s nicht sollte.<br><br>z.B : Das Lied wurde geleakt. — FR: La chanson a fuité.",
+            "moven" : "sich bewegen, woanders hingehen.<br><br>z.B : Lass mal zum Park moven. — FR: On bouge au parc ?",
+            "ownen" : "dominieren, besiegen.<br><br>z.B : Er hat sie alle geownt! — FR: Il les a tous dominés !",
+            "passen" : "ablehnen, verzichten.<br><br>z.B : Nee, ich pass. — FR: Non, je passe.",
+            "rennen" : "flüchten, abhauen.<br><br>z.B : Die Cops kamen, und alle sind gerannt. — FR: Les flics sont arrivés et tout le monde s’est barré.",
+            "safen" : "speichern, sichern.<br><br>z.B : Ich safe mir das. — FR: Je garde ça en mémoire.",
+            "sliden" : "jemandem schreiben, Kontakt aufnehmen.<br><br>z.B : Er ist in meine DMs geslidet. — FR: Il m’a écrit en DM.",
+            "smashen" : "jemanden attraktiv finden / etwas haben.<br><br>z.B : Würdest du die smashen? — FR: Tu la trouves canon ?",
+            "snitchen" : "verraten, petzen.<br><br>z.B : Du hast gesnitcht! — FR: T’as balancé !",
+            "sweaten" : "sich anstrengen, schwitzen.<br><br>z.B : Ich hab voll gesweatet beim Match. — FR: J’ai trop transpiré pendant le match.",
+            "Tea spitten" : "Gossip erzählen.<br><br>z.B : Lass mich den Tea spitten! — FR: Laisse-moi te raconter le scoop !",
+            "viben" : "gute Stimmung haben, sich gut fühlen.<br><br>z.B : Ich vibe grad voll zu dem Song. — FR: Je kiffe grave ce son.",
+            "wasten" : "verschwenden, vergeuden.<br><br>z.B : Ich hab mein Wochenende gewastet. — FR: J’ai gâché mon week-end.",
+            "zocken" : "Videospiele spielen.<br><br>z.B : Ich zock den ganzen Abend. — FR: Je joue toute la soirée."
+        };
+
+        // Initialisation
+        const datalist = document.getElementById("suggestions");
+        const popularGrid = document.getElementById("popularGrid");
+        const countDisplay = document.getElementById("countDisplay");
+        
+        const words = Object.keys(dictionnaire);
+        countDisplay.innerHTML = `📊 Über ${words.length} Wörter und Ausdrücke verfügbar`;
+
+        words.forEach((word, index) => {
+            // Ajouter à la liste de recherche
+            let option = document.createElement("option");
+            option.value = word;
+            datalist.appendChild(option);
+
+            // Ajouter aux suggestions visuelles (on en met 12 par défaut pour le look)
+            if (index < 12) {
+                let item = document.createElement("div");
+                item.className = "suggestion-item";
+                item.innerText = word;
+                item.onclick = () => fillSearch(word);
+                popularGrid.appendChild(item);
+            }
+        });
+
+        function chercher() {
+            let mot = document.getElementById("mot").value.trim();
+            let resultDiv = document.getElementById("result");
+
+            if (dictionnaire[mot]) {
+                resultDiv.style.display = "block";
+                resultDiv.innerHTML = "<strong>" + mot + "</strong> : " + dictionnaire[mot];
+                resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            } else {
+                resultDiv.style.display = "block";
+                resultDiv.innerHTML = "<span style='color:red;'>Wort nicht gefunden.</span> Bitte achte auf die richtige Schreibweise.";
+            }
+        }
+
+        function fillSearch(word) {
+            document.getElementById("mot").value = word;
+            chercher();
+        }
+
+        function handleKeyPress(e) {
+            if (e.key === "Enter") {
+                chercher();
+            }
+        }
+    </script>
+</body>
+</html>
